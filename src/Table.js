@@ -83,7 +83,7 @@ export default class Table extends React.PureComponent<TableParams> {
     if (!shallowEqual(nextProps.dataSource, this.props.dataSource)) {
       this.dataManager.reset(nextProps.dataSource);
       this.hasScroll();
-      this.resetData();
+      this.resetShowData();
     }
     if (!shallowEqual(nextProps.columns, this.props.columns)) {
       this.columnManager.reset(nextProps.columns, this.props.colMinWidth);
@@ -130,7 +130,7 @@ export default class Table extends React.PureComponent<TableParams> {
     this._width = width;
     this._height = height;
     this.showCount = this.getShowCount();
-    this.resetData();
+    this.resetShowData();
     this.setScrollPositionClassName();
   };
 
@@ -140,14 +140,6 @@ export default class Table extends React.PureComponent<TableParams> {
       const width = this._width - (this._hasScroll ? this._scrollSize : 0);
       this.columnManager.updateWidth(width);
     }
-  };
-
-  resetData = () => {
-    const result = this.resetShowData(this['bodyTable']);
-    this.store.setState({
-      ...result,
-      bodyWidth: this._width
-    });
   };
 
   setScrollPosition(position) {
@@ -212,7 +204,6 @@ export default class Table extends React.PureComponent<TableParams> {
     }
     const {headTable, bodyTable, fixedColumnsBodyLeft, fixedColumnsBodyRight} = this;
     if (this.lastScrollTop !== target.scrollTop && target !== headTable) {
-      const result = this.resetShowData(target);
       if (fixedColumnsBodyLeft && target !== fixedColumnsBodyLeft) {
         fixedColumnsBodyLeft.scrollTop = target.scrollTop;
       }
@@ -222,7 +213,7 @@ export default class Table extends React.PureComponent<TableParams> {
       if (bodyTable && target !== bodyTable) {
         bodyTable.scrollTop = target.scrollTop;
       }
-      this.store.setState(result);
+      this.resetShowData(target);
       if (this.props.refreshEnable) {
         this.scrollRefresh(target);
       }
@@ -245,28 +236,34 @@ export default class Table extends React.PureComponent<TableParams> {
   resetShowData = (target) => {
     let scrollTop = 0;
     if (target) {
+      target = this['bodyTable'];
+    }
+    if (target) {
       scrollTop = target.scrollTop;
+    } else {
+      return;
     }
     const {rowHeight} = this.props;
     const dataSource = this.dataManager.showData() || [];
     const hasScroll = this.hasScroll();
     if (!hasScroll) {
-      return {hasScroll, showData: dataSource};
+      return {hasScroll, startIndex: 0, stopIndex: dataSource.length};
     }
     let startIndex = floor(scrollTop / rowHeight) - 1;
     startIndex = startIndex < 0 ? 0 : startIndex;
-    let endIndex = startIndex + this.showCount;
-    const showData = dataSource.slice(startIndex, endIndex);
-    return {
+    let stopIndex = startIndex + this.showCount;
+    this.store.setState({
       hasScroll,
-      showData,
-      bodyHeight: this.dataManager._bodyHeight
-    };
+      startIndex,
+      stopIndex,
+      bodyHeight: this.dataManager._bodyHeight,
+      bodyWidth: this._width
+    });
   };
 
   handleExpandedRowKeysChange = (key, expanded) => {
     this.dataManager.resetExpandedRowKeys(key, expanded);
-    this.resetData();
+    this.resetShowData();
   };
 
   saveRef = (name) => (node) => {

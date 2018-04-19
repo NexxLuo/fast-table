@@ -1,28 +1,23 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import classNames from 'classnames';
 
-export default function ExpandedIcon(props, {table}) {
-  const {expanded} = props;
-  const {prefixCls} = table.props;
+type Props = {
+  expanded: boolean,
+  prefixCls: string,
+  rowKey: string,
+  onClick: Function
+}
+
+export default function ExpandedIcon(props: Props) {
+  const {expanded, prefixCls, rowKey, onClick} = props;
   const className = classNames(`${prefixCls}-expanded-icon`, {
     expanded: expanded
   });
-  const onClick = (e) => {
-    e.stopPropagation();
-    (typeof props.onClick === 'function') && props.onClick();
+  const eProps = {
+    className,
+    onClick
   };
   return (
-    <span className={className} onClick={onClick} />
+    <span {...eProps} data-index={rowKey} data-value={expanded ? 1 : 0} />
   );
 }
-
-ExpandedIcon.propTypes = {
-  expanded: PropTypes.bool
-};
-ExpandedIcon.defaultProps = {
-  expanded: false
-};
-ExpandedIcon.contextTypes = {
-  table: PropTypes.any
-};
